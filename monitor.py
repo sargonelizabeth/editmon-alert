@@ -25,6 +25,10 @@ def detail_url(no): return BASE + "work_employ_detail.html?no=%s" % no
 
 TOKEN     = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 CHAT_ID   = os.environ.get("TELEGRAM_CHAT_ID", "8628024271").strip()
+TOKEN2    = os.environ.get("TELEGRAM_BOT_TOKEN_2", "").strip()
+CHAT_ID2  = os.environ.get("TELEGRAM_CHAT_ID_2", "").strip()
+# 발송 대상: (봇토큰, chat_id) 목록 — 비어있는 쌍은 자동 제외
+RECIPIENTS = [(t, c) for (t, c) in [(TOKEN, CHAT_ID), (TOKEN2, CHAT_ID2)] if t and c]
 STATE_FILE= os.environ.get("STATE_FILE", "state.json")
 ONLY_REMOTE = os.environ.get("ONLY_REMOTE", "1") == "1"
 MAX_PER_RUN = int(os.environ.get("MAX_PER_RUN", "20"))
@@ -151,21 +155,31 @@ def is_remote(kv):
     return "재택" in (kv.get("복리후생", "") + " " + kv.get("근무형태", ""))
 
 # ---------- 텔레그램 ----------
-def tg_send(text):
-    if not TOKEN:
-        print("(dry-run, no token) ----\n" + text + "\n----"); return True
+def _send_one(token, chat_id, text):
     data = urllib.parse.urlencode({
-        "chat_id": CHAT_ID, "text": text, "disable_web_page_preview": "true",
+        "chat_id": chat_id, "text": text, "disable_web_page_preview": "true",
     }).encode()
-    url = "https://api.telegram.org/bot%s/sendMessage" % TOKEN
+    url = "https://api.telegram.org/bot%s/sendMessage" % token
     for _ in range(2):
         try:
             r = urllib.request.urlopen(urllib.request.Request(url, data=data), timeout=20).read().decode()
-            if '"ok":true' in r: return True
+            if '"ok":true' in r:
+                return True
         except Exception as e:
-            print("send error:", e)
+            print("  send error (%s):" % chat_id, e)
         time.sleep(2)
-    print("send FAILED:", text[:60]); return False
+    print("  send FAILED -> chat_id %s:" % chat_id, text[:50])
+    return False
+
+def tg_send(text):
+    if not RECIPIENTS:
+        print("(dry-run, no token) ----\n" + text + "\n----"); return True
+    ok_any = False
+    for tok, cid in RECIPIENTS:
+        if _send_one(tok, cid, text):
+            ok_any = True
+            print("  sent -> chat_id", cid)
+    return ok_any
 
 def load_state():
     try:
