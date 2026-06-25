@@ -22,14 +22,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: 의존성 설치
-        run: pip install beautifulsoup4
+      - name: 의존성 설치 (브라우저 포함)
+        run: |
+          pip install beautifulsoup4 playwright
+          python -m playwright install --with-deps chromium
 
       - name: 새 공고 확인 및 알림
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: "8628024271"   # 받는 사람(이 값은 비밀이 아님)
           ONLY_REMOTE: "1"                 # 1=재택만, 0=모든 새 공고
+          USE_BROWSER: "1"                 # 편집몬 차단 우회용 브라우저 접속
         run: python monitor.py
 
       - name: 상태 저장(중복 발송 방지)
