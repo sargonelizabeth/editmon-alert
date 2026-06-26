@@ -2,7 +2,7 @@ name: 편집몬 재택 공고 알림
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # 30분마다 (UTC 기준 간격, 실행은 수 분 지연될 수 있음)
+    - cron: "*/10 * * * *"   # 10분마다 (공개 저장소 = 무료 무제한, 더 고른 실행)
   workflow_dispatch: {}        # Actions 탭에서 수동 실행 버튼
 
 permissions:
